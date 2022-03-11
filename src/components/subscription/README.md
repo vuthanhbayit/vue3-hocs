@@ -1,4 +1,4 @@
-#### Ở đây, ta có 2 component tương tự nhau là `comment-list.vue` và `blog-list.vue`
+#### Ở đây, ta có 3 component tương tự nhau là `comment-list.vue`, `blog-list.vue` và `article-detail.vue`
 
 Component: `comment-list.vue`
 ```vue
@@ -101,4 +101,64 @@ export default defineComponent({
 </script>
 ```
 
-2 components này khác template và khác methods get data là `DataSource.getComments()` và `DataSource.getBlogs()`.
+
+Component: `article-detail.vue`
+```vue
+<template>
+  <div>
+    <h1>Đây là chi tiết bài viết</h1>
+
+    <div v-if="isLoading">...Loading</div>
+    <div v-else-if="isError">Error</div>
+    <div v-else>
+      {{ data }}
+    </div>
+  </div>
+</template>
+
+<script lang="ts">
+import { defineComponent, onBeforeUnmount, ref, watchEffect } from "vue";
+
+export default defineComponent({
+  name: "article-detail",
+  
+  props: {
+    id: Number
+  },
+
+  setup(props) {
+    const data = ref([]);
+    const isError = ref<Error | undefined>();
+    const isLoading = ref(false);
+
+    const fetchData = async () => {
+      try {
+        isError.value = undefined;
+        isLoading.value = true;
+
+        data.value = await DataSource.getArticle(props.id);
+      } catch (e) {
+        isError.value = e;
+      } finally {
+        isLoading.value = false;
+      }
+    };
+
+    const stop = watchEffect(fetchData);
+
+    onBeforeUnmount(stop);
+
+    return { data, isError, isLoading };
+  },
+});
+</script>
+
+</script>
+```
+
+3 components này khác template và khác methods get data là `DataSource.getComments()`, `DataSource.getBlogs()` và `DataSource.getArticle(props.id)`.
+
+Tuy nhiên cách viết lại có điểm chung: 
+- Các data `data`, `isError`, `isLoading` giống nhau.
+- Được `fetchData` khi mount và dữ liệu thay đổi
+- Được `stop` khi unmount.
